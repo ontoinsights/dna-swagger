@@ -106,7 +106,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'  
-  /dna/v1/narratives:
+  /dna/v1/repositories/narratives:
     get:
       summary: >-
         Get a list of all narratives and their meta-data in the 
@@ -219,7 +219,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'  
-  /dna/v1/narratives/graphs:
+  /dna/v1/repositories/narratives/graphs:
     get:
       summary: Get a narrative's knowledge graph
       description: >-

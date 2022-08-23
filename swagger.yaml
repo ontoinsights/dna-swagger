@@ -212,7 +212,7 @@ paths:
                   repository:
                     type: string
                     example: dna
-                  narrativeId:
+                  deleted:
                     type: string
                     example: 73cf1b89
         '400':

@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Deep Narrative Analysis RESTful APIs v1.0.1
+  title: Deep Narrative Analysis RESTful APIs v1.0
   description: |-
     Defines the interface for ingesting, retrieving, editing and deleting 
     narratives using the Deep Narrative Analysis (DNA) infrastructure.
@@ -70,6 +70,14 @@ paths:
                     example: Query parameter ?repository not specified
         '409':
           description: Repository already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Repository with the name, foo, already exists
         '500':
           description: Internal processing error
           content:
@@ -91,7 +99,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  repository:
+                  deleted:
                     type: string
                     example: dna
         '404':
@@ -170,9 +178,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/NotFound'  
         '409':
-          description: >-
-            Duplicate title; A narrative with the specified title is
-            already present in the repository
+          description: Duplicate title
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Narrative with the title, foo, already exists
         '500':
           description: Internal processing error
           content:
@@ -395,6 +409,10 @@ components:
                 type: integer
                 format: int64
                 example: 500
+              created:
+                type: string
+                format: date-time
+                example: 2022-07-21T17:32:28Z
     NarrativeMeta:
       type: object
       properties:
@@ -411,15 +429,19 @@ components:
           type: integer
           format: int64
           example: 500
+        created:
+          type: string
+          format: date-time
+          example: 2022-07-21T17:32:28Z
     NotFound:
       type: array
       items:
         type: object
         properties:
-          missingEntity:
+          missing:
             type: string
-            enum: [ REP, NARR_ID ]
-            example: REP
+            enum: [ repository, narrativeId ]
+            example: repository
           inputString:
             type: string
             example: foo
@@ -430,10 +452,10 @@ components:
     RepositoryMeta:
       type: object
       properties:
-        repositoryName:
+        repository:
           type: string
           example: narratives1
-        creationDate:
+        created:
           type: string
           format: date-time
           example: 2022-07-21T17:32:28Z

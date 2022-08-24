@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Deep Narrative Analysis RESTful APIs v1.0
+  title: Deep Narrative Analysis RESTful APIs v1.0.2
   description: |-
     Defines the interface for ingesting, retrieving, editing and deleting 
     narratives using the Deep Narrative Analysis (DNA) infrastructure.
@@ -63,11 +63,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Query parameter ?repository not specified
+                $ref: '#/components/schemas/BadRequest'  
         '409':
           description: Repository already exists
           content:
@@ -249,7 +245,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/KnowledgeGraph'  
+                type: object
+                properties:
+                  title:
+                    type: string
+                    example: An Old Title
+                  numberOfTriples:
+                    type: integer
+                    format: int64
+                    example: 500
+                  triples:
+                    type: string
+                    example: >-
+                      <urn:ontoinsights:dna:Event1> a <urn:ontoinsights:dna:Love> .
+                      <urn:ontoinsights:dna:Event1> rdfs:label "Event1 label" .
+                      <urn:ontoinsights:dna:Event1> <urn:ontoinsights:dna:has_actor> <urn:ontoinsights:dna:George> .
         '400':
           description: Missing or invalid content
           content:
@@ -282,7 +292,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/KnowledgeGraph'  
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: A Narrative Title
+                triples:
+                  type: string
+                  example: >-
+                    <urn:ontoinsights:dna:Event1> a <urn:ontoinsights:dna:Fondness> .
+                    <urn:ontoinsights:dna:Event1> rdfs:label "Event1 label" .
+                    <urn:ontoinsights:dna:Event1> <urn:ontoinsights:dna:has_actor> <urn:ontoinsights:dna:George> .
         required: true
       responses:
         '200':
@@ -335,16 +355,10 @@ components:
         items:
           type: object
           properties:
-            entity:
+            missing:
               type: string
-              enum: [ GRAPH_ERROR, MISSING_CONTENT ]
-              example: MISSING_CONTENT
-            inputValue:
-              type: string
-              example: string or null
-            errorDetail:
-              type: string
-              example: Missing narrative title
+              enum: [ repository, narrativeId, narrTitleOrText, narrTitleOrTriples ]
+              example: repository
     InputNarrative:
       type: object
       properties:

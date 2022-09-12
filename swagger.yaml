@@ -1,13 +1,34 @@
 openapi: 3.0.3
 info:
-  title: Deep Narrative Analysis RESTful APIs v1.0.2
+  title: Deep Narrative Analysis RESTful APIs v1.0.3
   description: |-
     Defines the interface for ingesting, retrieving, editing and deleting 
     narratives using the Deep Narrative Analysis (DNA) infrastructure.
     
-    Some useful links:
+    Useful links:
     - [GitHub DNA repository](https://github.com/ontoinsights/deep_narrative_analysis)
     - [DNA blog](https://hearing-all-voices.blogspot.com/)
+    
+    To use the API, the following workflow is recommended:
+    - Create a repository by POSTing to /dna/v1/repositories?repository=repo_name
+    - Ingest narratives to the repository by POSTing to 
+      /dna/v1/repositories/narratives?repository=repo_name with a request body
+      holding the narrative metadata and text (the response body will contain 
+      the narrative's id)
+    - Review and edit the ingested narrative by GETting 
+      /dna/v1/repositories/narratives?repository=repo_name&narrativeId=narr_id
+      (the response body will contain a list of all triples)
+    - If edited, update the narrative by PUTting to 
+      /dna/v1/repositories/narratives?repository=repo_name&narrativeId=narr_id
+      (the request body will contain a list of all triples)
+      
+    Note that GETting /dna/v1/repositories or /dna/v1/repositories/narratives
+    will return a list of all DNA repositories or narratives, respectively.
+    
+    DELETEing /dna/v1/repositories?repository=repo_name or 
+    /dna/v1/repositories/narratives?repository=repo_name&narrativeId=narr_id
+    will remove the specified repository or narrative. Please use these
+    commands with caution since the results are not reversable.
   contact:
     email: andrea@ontoinsights.com
   license:
@@ -51,13 +72,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  repository:
-                    type: string
-                    example: dna
                   created:
                     type: string
-                    format: date-time
-                    example: 2022-07-14T17:32:28Z
+                    example: dna
         '400':
           description: Repository creation - Bad request
           content:
@@ -99,11 +116,15 @@ paths:
                     type: string
                     example: dna
         '404':
-          description: Repository not found
+          description: Repository not found 
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotFound'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Repository with the name, foo, was not found
         '500':
           description: Internal processing error
           content:
@@ -132,7 +153,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotFound'  
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Repository with the name, foo, was not found
         '500':
           description: Internal processing error
           content:
@@ -146,6 +171,7 @@ paths:
         and ingest it to the specified repository
       parameters:
         - $ref: '#/components/parameters/repository'
+        - $ref: '#/components/parameters/extSources'
       operationId: ingest
       requestBody:
         description: Ingest narrative
@@ -155,14 +181,14 @@ paths:
               $ref: '#/components/schemas/InputNarrative'  
         required: true
       responses:
-        '200':
-          description: Successful operation
+        '201':
+          description: Knowledge graph created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NarrativeMeta'
+                $ref: '#/components/schemas/NarrativeDetails'
         '400':
-          description: Missing or invalid content
+          description: Narrative ingest - Missing or invalid content
           content:
             application/json:
               schema:
@@ -172,17 +198,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotFound'  
-        '409':
-          description: Duplicate title
-          content:
-            application/json:
-              schema:
                 type: object
                 properties:
                   error:
                     type: string
-                    example: Narrative with the title, foo, already exists
+                    example: Repository with the name, foo, was not found  
         '500':
           description: Internal processing error
           content:
@@ -212,17 +232,23 @@ paths:
                     type: string
                     example: 73cf1b89
         '400':
-          description: Missing or invalid content
+          description: Narrative delete - Missing or invalid content
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequest'  
         '404':
-          description: Repository or narrative ID not found
+          description: Repository or narrativeId not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotFound'  
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: >-
+                      Narrative with the id, 123, was not found in the
+                      repository, foo
         '500':
           description: Internal processing error
           content:
@@ -245,23 +271,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  title:
-                    type: string
-                    example: An Old Title
-                  numberOfTriples:
-                    type: integer
-                    format: int64
-                    example: 500
-                  triples:
-                    type: string
-                    example: >-
-                      <urn:ontoinsights:dna:Event1> a <urn:ontoinsights:dna:Love> .
-                      <urn:ontoinsights:dna:Event1> rdfs:label "Event1 label" .
-                      <urn:ontoinsights:dna:Event1> <urn:ontoinsights:dna:has_actor> <urn:ontoinsights:dna:George> .
+                $ref: '#/components/schemas/KnowledgeGraphDetails'  
         '400':
-          description: Missing or invalid content
+          description: KG retrieval - Missing or invalid content
           content:
             application/json:
               schema:
@@ -271,7 +283,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotFound'  
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: >-
+                      Narrative with the id, 123, was not found in foo
         '500':
           description: Internal processing error
           content:
@@ -282,27 +299,23 @@ paths:
       summary: Update a narrative's knowledge graph
       description: >-
         Update the knowledge graph for the specific narrative 
-        in the repository
+        in the repository. Currently, the entire graph is replaced.
+        In the future, it will be possible to update select triples.
       operationId: updateGraph
       parameters:
         - $ref: '#/components/parameters/repository'
         - $ref: '#/components/parameters/narrativeId'
       requestBody:
-        description: Knowledge graph details
+        description: Updated narrative triples
         content:
           application/json:
             schema:
               type: object
               properties:
-                title:
-                  type: string
-                  example: A Narrative Title
                 triples:
-                  type: string
-                  example: >-
-                    <urn:ontoinsights:dna:Event1> a <urn:ontoinsights:dna:Fondness> .
-                    <urn:ontoinsights:dna:Event1> rdfs:label "Event1 label" .
-                    <urn:ontoinsights:dna:Event1> <urn:ontoinsights:dna:has_actor> <urn:ontoinsights:dna:George> .
+                  type: array
+                  items:
+                    type: string
         required: true
       responses:
         '200':
@@ -310,7 +323,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NarrativeMeta'  
+                type: object
+                properties:
+                  repository:
+                    type: string
+                    example: dna
+                  narrativeId:
+                    type: string
+                    example: 73cf1b89
+                  processed:
+                    type: string
+                    format: date-time
+                    example: 2022-09-09T12:41:00Z
+                  numberOfTriples:
+                    type: integer
+                    example: 500
         '400':
           description: Update knowledge graph - Bad request
           content:
@@ -322,7 +349,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotFound'  
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: >-
+                      Narrative with the id, 123, was not found in foo
         '500':
           description: Internal processing error
           content:
@@ -331,14 +363,16 @@ paths:
                 $ref: '#/components/schemas/InternalError'  
 components:
   parameters:
-    repository:
-      name: repository
+    extSources:
+      name: extSources
       in: query
       description: >-
-        Name of the repository holding the narratives
-      required: true
+        Boolean indicating whether details from external sources
+        should be included in the parse
+      required: false
       schema:
-        type: string
+        type: boolean
+        default: false
     narrativeId:
       name: narrativeId
       in: query
@@ -347,24 +381,30 @@ components:
       schema:
         type: string
         format: uuid
+        example:
+    repository:
+      name: repository
+      in: query
+      description: >-
+        Name of the repository holding the narratives
+      required: true
+      schema:
+        type: string
   schemas:
     BadRequest:
-      type: array
-      items:
-        type: array
-        items:
-          type: object
-          properties:
-            missing:
+      type: object
+      properties:
+          missing:
+            type: array
+            items:
               type: string
-              enum: [ repository, narrativeId, narrTitleOrText, narrTitleOrTriples ]
+              enum: [ repository, narrativeId, narrativeText, narrativeTriples ]
               example: repository
     InputNarrative:
       type: object
       properties:
-        title:
-          type: string
-          example: A Narrative Title
+        narrativeMetadata: 
+          $ref: '#/components/schemas/NarrativeMeta'
         narrative:
           type: string
           example: This is the text of the narrative.
@@ -372,36 +412,39 @@ components:
       type: object
       properties:
         error:
-          type: string
-          example: Error details
-    KnowledgeGraph:
+          type: array
+          items:
+            type: string
+            example: error details
+    KnowledgeGraphDetails:
       type: object
       properties:
-        title:
+        repository:
           type: string
-          example: A New Title
-        numberOfTriples:
-          type: integer
-          format: int64
-          example: 500
+          example: dna
+        narrativeDetails:
+          $ref: '#/components/schemas/NarrativeDetails'
         triples:
           type: array
           items:
-            type: object
-            properties:
-              subject:
-                type: string
-                example: dna:Event1
-              predicate:
-                type: string
-                example: rdfs:label
-              objectType:
-                type: string
-                enum: [ DATA, OBJECT ]
-                example: DATA
-              object:
-                type: string
-                example: Event1 label
+            type: string
+    NarrativeDetails:
+      type: object
+      properties:
+        narrativeId:
+          type: string
+          example: 73cf1b89
+        processed:
+          type: string
+          description: Date/time when the text was processed by DNA
+          format: date-time 
+          example: 2022-09-09T12:41:00Z
+        numberOfTriples:
+          type: integer
+          description: Number of triples in the knowledge graph
+          example: 500
+        narrativeMetadata:
+          $ref: '#/components/schemas/NarrativeMeta'
     NarrativeList:
       type: object
       properties:
@@ -411,54 +454,32 @@ components:
         narratives:
           type: array
           items:
-            type: object
-            properties:
-              narrativeId:
-                type: string
-                example: 73cf1b89
-              title:
-                type: string
-                example: A Narrative Title
-              numberOfTriples:
-                type: integer
-                format: int64
-                example: 500
-              created:
-                type: string
-                format: date-time
-                example: 2022-07-21T17:32:28Z
+            $ref: '#/components/schemas/NarrativeDetails'
     NarrativeMeta:
       type: object
       properties:
-        repository:
-          type: string
-          example: dna
-        narrativeId:
-          type: string
-          example: 73cf1b89
+        author: 
+            type: string
+            description: The writer of the text
+            example: John Smith
+        published:
+            type: string
+            description: Date/time when the text was published
+            format: date-time 
+            example: 2022-07-14T17:32:28Z
+        publisher:
+            type: string
+            example: Wall Street Journal
+        source:
+            type: string
+            description: >-
+              String identifying the online location of the article, its reference 
+              in an online repository, etc. 
+            example: Identifier_such_as_URL
         title:
-          type: string
-          example: A Narrative Title
-        numberOfTriples:
-          type: integer
-          format: int64
-          example: 500
-        created:
-          type: string
-          format: date-time
-          example: 2022-07-21T17:32:28Z
-    NotFound:
-      type: array
-      items:
-        type: object
-        properties:
-          missing:
             type: string
-            enum: [ repository, narrativeId ]
-            example: repository
-          inputString:
-            type: string
-            example: foo
+            description: Article, blog post, ... title
+            example: A Narrative Title
     RepositoryList:
       type: array
       items:

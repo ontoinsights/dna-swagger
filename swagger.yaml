@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Deep Narrative Analysis RESTful APIs v1.0.3
+  title: Deep Narrative Analysis RESTful APIs v1.0.4
   description: |-
     Defines the interface for ingesting, retrieving, editing and deleting 
     narratives using the Deep Narrative Analysis (DNA) infrastructure.
@@ -171,6 +171,7 @@ paths:
         and ingest it to the specified repository
       parameters:
         - $ref: '#/components/parameters/repository'
+        - $ref: '#/components/parameters/timelinePossible'
         - $ref: '#/components/parameters/extSources'
       operationId: ingest
       requestBody:
@@ -381,7 +382,19 @@ components:
       schema:
         type: string
         format: uuid
-        example:
+        example: 123
+    timelinePossible:
+      name: timelinePossible
+      in: query
+      description: >-
+        Boolean indicating whether a coherent timeline could be constructed
+        from the text. If the text is autobiographical, a timeline should
+        be possible. If not (for example, a news article where references, etc.
+        could vary), the default (false) should be used.
+      required: false
+      schema:
+        type: boolean
+        default: false
     repository:
       name: repository
       in: query
@@ -473,8 +486,8 @@ components:
         source:
             type: string
             description: >-
-              String identifying the online location of the article, its reference 
-              in an online repository, etc. 
+              String identifying the online location of the article, its 
+              reference in an online repository, etc. 
             example: Identifier_such_as_URL
         title:
             type: string

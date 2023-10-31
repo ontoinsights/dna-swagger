@@ -91,12 +91,15 @@ paths:
         Get a list of news articles regarding the specified topic,
         published within the indicated date range, and then ingest
         ones with sufficient, accessible text to the specified 
-        repository
+        repository. The number ingested can be limited to the first
+        x, where x is specified using the number_to_ingest query
+        parameter.
       parameters:
         - $ref: '#/components/parameters/repository'
         - $ref: '#/components/parameters/topic'
         - $ref: '#/components/parameters/fromDate'
         - $ref: '#/components/parameters/toDate'
+        - $ref: '#/components/parameters/number_to_ingest'
       operationId: ingestNews
       responses:
         '200':
@@ -504,6 +507,17 @@ components:
         type: string
         format: uuid
         example: 73cf1b89
+    number_to_ingest:
+      name: number_to_ingest
+      in: query
+      description: >-
+        Number of news articles to ingest from a retrieval
+        from newsorg.api. If not specified, all articles
+        that are retrieved with sufficient, valid text are
+        ingested.
+      required: false
+      schema:
+        type: integer
     repository:
       name: repository
       in: query

@@ -10,7 +10,9 @@ info:
     the [GitHub DNA repository](https://github.com/ontoinsights/deep_narrative_analysis).
     Note that this implementation assumes storage of graphs in a Stardog database.
     Environment variables define the location of that database (typically a 
-    Stardog Cloud instance), and a username/password to access it. If the 
+    Stardog Cloud instance), and a username/password to access it (specially, 
+    STARDOG_ENDPOINT, STARDOG_USER and STARDOG_PASSWORD). In addition,
+    GEONAMES_ID and OPENAI_API_KEY environment variables MUST be set. If the 
     environment variables are not defined, DNA will not function.
     
     The following is a typical workflow after starting the DNA application:

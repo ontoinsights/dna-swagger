@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Deep Narrative Analysis RESTful APIs v1.15
+  title: Deep Narrative Analysis RESTful APIs v1.2
   description: |-
     Defines the interface for ingesting, retrieving, editing and deleting 
     narratives and news articles using the Deep Narrative Analysis (DNA) 
@@ -19,14 +19,10 @@ info:
     - Create a new repository by POSTing to
       /dna/v1/repositories?repository=repo_name, or an existing repository may 
       be reused
-    - Review the contents of a repository by GETting 
-      /dna/v1/repositories/narratives?repository=repo_name
-      (the response body will contain a list of all narratives/articles
-      and their metadata)
-    - Determine which one or two news articles should be analyzed and/or 
-      compared
-      - Note that these APIs are currently under development
-    - OR - 
+    - OR -
+    - Use an existing repository (existing repositories are listed by 
+      GETting /dna/v1/repositories)
+    - THEN - 
     - Ingest a narrative or news article by POSTing its metadata 
       and text to 
       /dna/v1/repositories/narrative-texts?repository=repo_name 
@@ -36,6 +32,15 @@ info:
       - Only English text articles are currently processed
       - Automated ingest is possible but many sites require subscriptions
         which are not currently supported 
+    - OR - 
+    - Determine which (already ingested) articles or narratives 
+      are of interest by GETting 
+      /dna/v1/repositories/narratives?repository=repo_name
+      (the response body will contain a list of all narratives/articles
+      and their metadata)
+    - THEN -
+    - Select articles to be analyzed/compared
+      - Note that these APIs are currently under development
       
     To review the specific triples in a narrative or article, GET 
     /dna/v1/repositories/narratives/graphs?repository=repo_name&narrativeId=narr_id
@@ -219,6 +224,7 @@ paths:
         field. Also, the "title" and "source" details must be provided.
       parameters:
         - $ref: '#/components/parameters/repository'
+        - $ref: '#/components/parameters/sentences'
       operationId: ingestNarrative
       requestBody:
         description: Ingest narrative
@@ -235,12 +241,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  server:
-                    type: string
-                    example: http://example.com
                   repository:
                     type: string
-                    example: dna
+                    example: foo
                   narrativeDetails:
                     $ref: '#/components/schemas/NarrativeDetails'
         '400':
@@ -430,6 +433,18 @@ components:
         type: string
         format: uuid
         example: 73cf1b89
+    sentences:
+      name: sentences
+      in: query
+      description: >
+        Number of sentences of the narrative/article to ingest.
+        If omitted, up to 100 sentences are ingested, but the
+        processing time is lengthy. (This is being addressed
+        by current development.)
+      required: false
+      schema:
+        type: integer
+        example: 10
     repository:
       name: repository
       in: query
@@ -514,6 +529,16 @@ components:
           type: integer
           description: Number of triples in the information graph
           example: 500
+        numberOfSentences:
+            type: integer
+            description: >
+              Integer indicating the total number of sentences in the text
+            example: 60
+        numberIngested:
+            type: integer
+            description: >
+              Integer indicating the number of sentences ingested
+            example: 10
         narrativeMetadata:
           $ref: '#/components/schemas/NarrativeMeta'
     NarrativeList:
